@@ -199,41 +199,11 @@ class _MerchCardState extends State<MerchCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // --- GAMBAR BARANG ---
-          Image.network(
+          Image.asset(
             widget.merch.imagePath,
             height: 200,
             width: double.infinity,
             fit: BoxFit.cover,
-            loadingBuilder: (context, child, progress) { /* ... (kode loading tetap sama) ... */
-              return progress == null
-                  ? child
-                  : Container(
-                      height: 200,
-                      color: AppTheme.backgroundColor,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
-                          value: progress.expectedTotalBytes != null
-                              ? progress.cumulativeBytesLoaded /
-                                  progress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-            },
-            errorBuilder: (context, error, stackTrace) { /* ... (kode error tetap sama) ... */
-              return Container(
-                height: 200,
-                color: AppTheme.secondaryColor,
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image, 
-                    color: AppTheme.textColor,
-                    size: 40,
-                  ),
-                ),
-              );
-            },
           ),
           
           // --- BAGIAN DETAIL (TEKS) ---

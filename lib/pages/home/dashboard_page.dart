@@ -102,7 +102,7 @@ class DashboardPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         // Ganti URL mati dengan placeholder
         image: const DecorationImage(
-          image: NetworkImage('https://via.placeholder.com/600x400/5B3A29/FFFFFF?text=AOT+Banner'),
+          image: AssetImage('assets/s3.jpeg'),
           fit: BoxFit.cover,
         ),
         boxShadow: [
@@ -153,7 +153,7 @@ class DashboardPage extends StatelessWidget {
                 const SizedBox(width: 8), // Beri jarak
                 ElevatedButton(
                   onPressed: () {
-                    if (onTabSelected != null) onTabSelected!(3); 
+                    if (onTabSelected != null) onTabSelected(3); 
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -169,6 +169,7 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
+
 
   // --- WIDGET BUILDER UNTUK SUPPLIES (MERCH) ---
   Widget _buildSuppliesSection(BuildContext context) {
@@ -266,7 +267,7 @@ class _MerchCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.network(
+              Image.asset(
                 merch.imagePath, // Ini pakai URL placeholder dari merch_model
                 height: 150,
                 width: double.infinity,
@@ -327,7 +328,7 @@ class _NewsCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
+                child: Image.asset(
                   article.imagePath, // Ini pakai URL placeholder baru
                   height: 60,
                   width: 60,
