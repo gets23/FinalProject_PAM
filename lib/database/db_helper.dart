@@ -9,29 +9,27 @@ class DatabaseHelper {
 
   DatabaseHelper._init();
 
-  // Getter untuk database
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB();
     return _database!;
   }
 
-  // Initialize Database
   Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, AppConfig.databaseName);
 
     return await openDatabase(
       path,
-      version: AppConfig.databaseVersion, // Ini akan membaca versi baru (misal: 2)
+      version: AppConfig.databaseVersion,
       onCreate: _createDB,
-      onUpgrade: _upgradeDB, // Ini akan terpicu!
+      onUpgrade: _upgradeDB,
     );
   }
 
-  // Create Tables
+  // --- 👇 INI FUNGSI UNTUK INSTALL BARU (WAJIB LENGKAP) 👇 ---
   Future<void> _createDB(Database db, int version) async {
-    // Fungsi ini sudah benar, untuk user yang baru install
+    print('--- EXECUTING _createDB (NEW INSTALL) ---');
     // Table: users
     await db.execute('''
       CREATE TABLE users (
@@ -45,7 +43,6 @@ class DatabaseHelper {
         updated_at TEXT
       )
     ''');
-
     // Table: sessions
     await db.execute('''
       CREATE TABLE sessions (
@@ -58,8 +55,7 @@ class DatabaseHelper {
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
-
-    // Table: favorites
+    // Table: favorites (Karakter)
     await db.execute('''
       CREATE TABLE favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,7 +68,6 @@ class DatabaseHelper {
         UNIQUE(user_id, character_id)
       )
     ''');
-
     // Table: watched_episodes
     await db.execute('''
       CREATE TABLE watched_episodes (
@@ -85,8 +80,7 @@ class DatabaseHelper {
         UNIQUE(user_id, episode_id)
       )
     ''');
-
-    // Table: feedback (Sudah ada, bagus)
+    // Table: feedback
     await db.execute('''
       CREATE TABLE feedback (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,24 +92,48 @@ class DatabaseHelper {
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
+    
+    // --- 👇 INI DIA YANG HILANG KEMARIN 👇 ---
+    // Table: favorite_titans
+    await db.execute('''
+      CREATE TABLE favorite_titans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        titan_id INTEGER NOT NULL,
+        titan_name TEXT NOT NULL,
+        titan_image TEXT,
+        added_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE(user_id, titan_id)
+      )
+    ''');
+    // --- 👆 BATAS TAMBAHAN 👆 ---
 
-    // Create indexes untuk performance (Sudah ada, bagus)
+    // Create indexes
     await db.execute('CREATE INDEX idx_users_email ON users(email)');
     await db.execute('CREATE INDEX idx_sessions_token ON sessions(token)');
     await db.execute('CREATE INDEX idx_sessions_user_id ON sessions(user_id)');
     await db.execute('CREATE INDEX idx_favorites_user_id ON favorites(user_id)');
     await db.execute('CREATE INDEX idx_watched_user_id ON watched_episodes(user_id)');
     await db.execute('CREATE INDEX idx_feedback_user_id ON feedback(user_id)');
+    await db.execute('CREATE INDEX idx_favorite_titans_user_id ON favorite_titans(user_id)');
+    
+    print('--- _createDB FINISHED ---');
   }
 
-  // Upgrade Database (untuk versi selanjutnya)
+  // --- 👇 INI FUNGSI UNTUK UPGRADE (JIKA USER SUDAH PUNYA V1/V2) 👇 ---
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     
-    print('UPGRADING DATABASE from v$oldVersion to v$newVersion');
+    print('--- EXECUTING _upgradeDB ---');
+    print('--- OldVersion: $oldVersion, NewVersion: $newVersion ---');
 
-    // Jika user datang dari versi 1 (sebelum ada feedback)
+    // Versi 1: users, sessions, favorites, watched_episodes
+    // Versi 2: Menambahkan 'feedback'
+    // Versi 3: Menambahkan 'favorite_titans'
+
+    // Jika user datang dari v1 (belum punya feedback & favorite_titans)
     if (oldVersion < 2) {
-      // 1. Buat tabel feedback
+      print('Upgrading from v1: Adding feedback table...');
       await db.execute('''
         CREATE TABLE feedback (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,38 +145,45 @@ class DatabaseHelper {
           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
       ''');
-      
-      // 2. Buat index-nya
       await db.execute('CREATE INDEX idx_feedback_user_id ON feedback(user_id)');
-      
-      print('Database upgrade complete: Table feedback created.');
     }
 
-    if (oldVersion < (AppConfig.databaseVersion)) {
-      print('Membersihkan data lama dari tabel feedback...');
-      await db.delete('feedback');
+    // Jika user datang dari v1 atau v2 (belum punya favorite_titans)
+    if (oldVersion < 3) {
+      print('Upgrading from v2: Adding favorite_titans table...');
+      await db.execute('''
+        CREATE TABLE favorite_titans (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          titan_id INTEGER NOT NULL,
+          titan_name TEXT NOT NULL,
+          titan_image TEXT,
+          added_at TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+          UNIQUE(user_id, titan_id)
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_favorite_titans_user_id ON favorite_titans(user_id)');
     }
   }
 
-
-  // Close Database
+  // --- (Sisa file: close, clearAllData, deleteDB) ---
   Future<void> close() async {
     final db = await database;
     await db.close();
     _database = null;
   }
-
-  // Clear all data (untuk testing/reset)
+  
   Future<void> clearAllData() async {
     final db = await database;
     await db.delete('users');
     await db.delete('sessions');
     await db.delete('favorites');
     await db.delete('watched_episodes');
-    await db.delete('feedback'); // Tambahkan feedback di sini
+    await db.delete('feedback');
+    await db.delete('favorite_titans'); // <-- Tambahkan ini
   }
-
-  // Delete Database (untuk testing)
+  
   Future<void> deleteDB() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, AppConfig.databaseName);

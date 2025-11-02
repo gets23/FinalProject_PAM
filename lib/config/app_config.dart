@@ -18,7 +18,7 @@ class AppConfig {
   
   // ==================== DATABASE CONFIG ====================
   static const String databaseName = 'scout_regiment.db';
-  static const int databaseVersion = 5;
+  static const int databaseVersion = 7;
   
   // Table names
   static const String usersTable = 'users';
