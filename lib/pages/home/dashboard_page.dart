@@ -174,7 +174,7 @@ class DashboardPage extends StatelessWidget {
   // --- WIDGET BUILDER UNTUK SUPPLIES (MERCH) ---
   Widget _buildSuppliesSection(BuildContext context) {
     final merchList = MerchModel.getAllMerch(); 
-    final currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '\$');
+    final currencyFormat = NumberFormat.currency(locale: 'ja_JP', symbol: '¥');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +291,7 @@ class _MerchCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      format.format(merch.priceJpy / 150),
+                      format.format(merch.priceJpy),
                       style: AppTheme.bodySmall.copyWith(color: AppTheme.textColor),
                     ),
                   ],

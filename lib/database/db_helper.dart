@@ -21,13 +21,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: AppConfig.databaseVersion,
+      version: AppConfig.databaseVersion, // Ini akan membaca versi baru
       onCreate: _createDB,
-      onUpgrade: _upgradeDB,
+      onUpgrade: _upgradeDB, // Ini akan terpicu!
     );
   }
 
-  // --- 👇 INI FUNGSI UNTUK INSTALL BARU (WAJIB LENGKAP) 👇 ---
+  // --- FUNGSI INI SUDAH BENAR, JANGAN DIUBAH ---
+  // (Untuk user yang baru install)
   Future<void> _createDB(Database db, int version) async {
     print('--- EXECUTING _createDB (NEW INSTALL) ---');
     // Table: users
@@ -43,6 +44,7 @@ class DatabaseHelper {
         updated_at TEXT
       )
     ''');
+
     // Table: sessions
     await db.execute('''
       CREATE TABLE sessions (
@@ -55,7 +57,8 @@ class DatabaseHelper {
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
-    // Table: favorites (Karakter)
+
+    // Table: favorites
     await db.execute('''
       CREATE TABLE favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,6 +71,7 @@ class DatabaseHelper {
         UNIQUE(user_id, character_id)
       )
     ''');
+
     // Table: watched_episodes
     await db.execute('''
       CREATE TABLE watched_episodes (
@@ -80,6 +84,7 @@ class DatabaseHelper {
         UNIQUE(user_id, episode_id)
       )
     ''');
+
     // Table: feedback
     await db.execute('''
       CREATE TABLE feedback (
@@ -93,8 +98,7 @@ class DatabaseHelper {
       )
     ''');
     
-    // --- 👇 INI DIA YANG HILANG KEMARIN 👇 ---
-    // Table: favorite_titans
+    // Table: favorite_titans (Sudah ada, bagus)
     await db.execute('''
       CREATE TABLE favorite_titans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,9 +111,8 @@ class DatabaseHelper {
         UNIQUE(user_id, titan_id)
       )
     ''');
-    // --- 👆 BATAS TAMBAHAN 👆 ---
 
-    // Create indexes
+    // Create indexes (Sudah ada, bagus)
     await db.execute('CREATE INDEX idx_users_email ON users(email)');
     await db.execute('CREATE INDEX idx_sessions_token ON sessions(token)');
     await db.execute('CREATE INDEX idx_sessions_user_id ON sessions(user_id)');
@@ -120,22 +123,25 @@ class DatabaseHelper {
     
     print('--- _createDB FINISHED ---');
   }
+  // --- BATAS FUNGSI _createDB ---
 
-  // --- 👇 INI FUNGSI UNTUK UPGRADE (JIKA USER SUDAH PUNYA V1/V2) 👇 ---
+
+  // --- 👇 INI FUNGSI YANG SAYA PERBAIKI (ANTI-CRASH) 👇 ---
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     
-    print('--- EXECUTING _upgradeDB ---');
+    print('--- EXECUTING _upgradeDB (Anti-Crash Mode) ---');
     print('--- OldVersion: $oldVersion, NewVersion: $newVersion ---');
 
-    // Versi 1: users, sessions, favorites, watched_episodes
+    // Versi 1: Punya 4 tabel awal
     // Versi 2: Menambahkan 'feedback'
     // Versi 3: Menambahkan 'favorite_titans'
 
-    // Jika user datang dari v1 (belum punya feedback & favorite_titans)
+    // Cek untuk v2
+    // (Tambahkan 'IF NOT EXISTS' agar tidak crash jika tabel sudah ada)
     if (oldVersion < 2) {
-      print('Upgrading from v1: Adding feedback table...');
+      print('Upgrading to v2: Checking for feedback table...');
       await db.execute('''
-        CREATE TABLE feedback (
+        CREATE TABLE IF NOT EXISTS feedback (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
           rating INTEGER NOT NULL,
@@ -145,14 +151,20 @@ class DatabaseHelper {
           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
       ''');
-      await db.execute('CREATE INDEX idx_feedback_user_id ON feedback(user_id)');
+      // Pakai try-catch biar aman jika index sudah ada
+      try {
+        await db.execute('CREATE INDEX idx_feedback_user_id ON feedback(user_id)');
+      } catch (e) {
+        print('Index feedback (mungkin) sudah ada, skip.');
+      }
     }
 
-    // Jika user datang dari v1 atau v2 (belum punya favorite_titans)
+    // Cek untuk v3
+    // (Tambahkan 'IF NOT EXISTS' agar tidak crash)
     if (oldVersion < 3) {
-      print('Upgrading from v2: Adding favorite_titans table...');
+      print('Upgrading to v3: Checking for favorite_titans table...');
       await db.execute('''
-        CREATE TABLE favorite_titans (
+        CREATE TABLE IF NOT EXISTS favorite_titans (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
           titan_id INTEGER NOT NULL,
@@ -163,17 +175,26 @@ class DatabaseHelper {
           UNIQUE(user_id, titan_id)
         )
       ''');
-      await db.execute('CREATE INDEX idx_favorite_titans_user_id ON favorite_titans(user_id)');
+      try {
+        await db.execute('CREATE INDEX idx_favorite_titans_user_id ON favorite_titans(user_id)');
+      } catch (e) {
+        print('Index favorite_titans (mungkin) sudah ada, skip.');
+      }
     }
-  }
 
-  // --- (Sisa file: close, clearAllData, deleteDB) ---
+    // HAPUS BLOK clear feedback YANG SEBELUMNYA ADA DI SINI
+  }
+  // --- 👆 BATAS PERBAIKAN 👆 ---
+
+
+  // Close Database
   Future<void> close() async {
     final db = await database;
     await db.close();
     _database = null;
   }
-  
+
+  // Clear all data (untuk testing/reset)
   Future<void> clearAllData() async {
     final db = await database;
     await db.delete('users');
@@ -181,9 +202,10 @@ class DatabaseHelper {
     await db.delete('favorites');
     await db.delete('watched_episodes');
     await db.delete('feedback');
-    await db.delete('favorite_titans'); // <-- Tambahkan ini
+    await db.delete('favorite_titans'); // <-- Pastikan ini ada
   }
-  
+
+  // Delete Database (untuk testing)
   Future<void> deleteDB() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, AppConfig.databaseName);

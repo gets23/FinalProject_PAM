@@ -4,13 +4,12 @@ import '/config/theme.dart';
 import '/models/titan_model.dart'; 
 import '/services/api.dart'; 
 import '/widgets/cards/titan_card.dart'; 
-import '/pages/characters/titan_detail_page.dart';
+import '/pages/characters/titan_detail_page.dart'; 
 
-// --- 👇 TAMBAHKAN IMPORT BARU 👇 ---
-import '/services/auth.dart';
-import '/database/dao/fav_titan_dao.dart';
-import '/models/fav_titan_model.dart';
-// --- 👆 BATAS TAMBAHAN 👆 ---
+// Hapus semua import favorit
+// import '/services/auth.dart';
+// import '/database/dao/favorite_titan_dao.dart';
+// import '/models/favorite_titan_model.dart';
 
 class TitanListTab extends StatefulWidget {
   const TitanListTab({Key? key}) : super(key: key);
@@ -23,24 +22,20 @@ class _TitanListTabState extends State<TitanListTab> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
-  // --- 👇 TAMBAHKAN DAO & AUTH 👇 ---
-  final FavoriteTitanDao _favoriteDao = FavoriteTitanDao();
-  final AuthService _authService = AuthService();
-  // --- 👆 BATAS TAMBAHAN 👆 ---
+  // Hapus semua state favorit
+  // final FavoriteTitanDao _favoriteDao = FavoriteTitanDao();
+  // final AuthService _authService = AuthService();
+  // Set<int> _favoriteTitanIds = {};
 
   late Future<List<Titan>> _titansFuture;
   List<Titan> _allTitans = [];
   List<Titan> _filteredTitans = [];
 
-  // --- 👇 TAMBAHKAN STATE FAVORIT BARU 👇 ---
-  Set<int> _favoriteTitanIds = {};
-  // --- 👆 BATAS TAMBAHAN 👆 ---
-
   @override
   void initState() {
     super.initState();
     _titansFuture = _loadTitans();
-    _loadFavoriteTitanIds(); // <-- Panggil fungsi load favorit
+    // Hapus _loadFavoriteTitanIds();
     _searchController.addListener(_filterTitans);
   }
 
@@ -61,60 +56,8 @@ class _TitanListTabState extends State<TitanListTab> {
     }
   }
 
-  // --- 👇 FUNGSI BARU UNTUK LOAD ID FAVORIT TITAN 👇 ---
-  Future<void> _loadFavoriteTitanIds() async {
-    final userId = _authService.currentUser?.id;
-    if (userId == null) return;
-    final ids = await _favoriteDao.getAllFavoriteIds(userId);
-    if (mounted) {
-      setState(() {
-        _favoriteTitanIds = ids;
-      });
-    }
-  }
-  // --- 👆 BATAS TAMBAHAN 👆 ---
-
-  // --- 👇 FUNGSI BARU UNTUK HANDLE TOGGLE FAVORIT TITAN 👇 ---
-  Future<void> _handleFavoriteToggle(Titan titan) async {
-    final userId = _authService.currentUser?.id;
-    if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Silakan login untuk menambah favorit.'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
-      return;
-    }
-
-    final isCurrentlyFavorite = _favoriteTitanIds.contains(titan.id);
-
-    if (isCurrentlyFavorite) {
-      // Hapus
-      await _favoriteDao.removeFavorite(userId, titan.id);
-      if (mounted) {
-        setState(() {
-          _favoriteTitanIds.remove(titan.id);
-        });
-      }
-    } else {
-      // Tambah
-      final newFavorite = FavoriteTitanModel(
-        userId: userId,
-        titanId: titan.id,
-        titanName: titan.name,
-        titanImage: titan.pictureUrl,
-        addedAt: DateTime.now().toIso8601String(),
-      );
-      await _favoriteDao.addFavorite(newFavorite);
-      if (mounted) {
-        setState(() {
-          _favoriteTitanIds.add(titan.id);
-        });
-      }
-    }
-  }
-  // --- 👆 BATAS TAMBAHAN 👆 ---
+  // Hapus fungsi _loadFavoriteTitanIds()
+  // Hapus fungsi _handleFavoriteToggle()
 
   void _filterTitans() {
     // ... (Fungsi ini sudah benar)
@@ -173,14 +116,7 @@ class _TitanListTabState extends State<TitanListTab> {
                   ),
                 );
               }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Gagal memuat data Titan. Periksa koneksi internet.',
-                    style: TextStyle(color: AppTheme.errorColor),
-                  ),
-                );
-              }
+              // ...
               if (_filteredTitans.isEmpty) {
                 return Center(
                   child: Text(
@@ -201,24 +137,19 @@ class _TitanListTabState extends State<TitanListTab> {
                 itemCount: _filteredTitans.length,
                 itemBuilder: (context, index) {
                   final titan = _filteredTitans[index];
-                  // --- 👇 CEK STATUS FAVORIT TITAN 👇 ---
-                  final isFavorite = _favoriteTitanIds.contains(titan.id);
-
+                  // Hapus logic isFavorite
+                  
                   return TitanCard(
                     titan: titan,
-                    // --- 👇 KIRIM DATA & FUNGSI BARU KE CARD 👇 ---
-                    isFavorite: isFavorite,
-                    onFavoriteToggle: () => _handleFavoriteToggle(titan),
-                    // --- 👆 BATAS TAMBAHAN 👆 ---
+                    // Hapus properti favorit
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TitanDetailPage(titan: titan),
                         ),
-                      ).then((_) {
-                        _loadFavoriteTitanIds(); // Refresh saat kembali
-                      });
+                      );
+                      // Hapus .then()
                     },
                   );
                 },

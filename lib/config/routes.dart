@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import '/pages/auth/splash_screen.dart';
 import '/pages/profile/pfp_page.dart';
-import '/pages/profile/edit_pfp_page.dart';
 import '/pages/profile/feedback_page.dart';
 import '/pages/tools/curr_conv_page.dart';
 import '/pages/tools/time_conv_page.dart';
@@ -76,9 +75,6 @@ class AppRoutes {
 
       case AppRoutes.profile:
         return MaterialPageRoute(builder: (_) => ProfilePage());
-
-      case AppRoutes.editProfile:
-        return MaterialPageRoute(builder: (_) => EditProfilePage());
       
       case AppRoutes.feedback:
         return MaterialPageRoute(builder: (_) => FeedbackPage());
