@@ -22,7 +22,7 @@ class Titan {
       name: json['name'],
       description: json['description'],
       height: json['height'],
-      pictureUrl: json['picture_url'],
+      pictureUrl: json['img'],
     );
   }
 }

@@ -119,27 +119,27 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Beranda',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.map_outlined),
               activeIcon: Icon(Icons.map),
-              label: 'Map',
+              label: 'Peta',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.people_outline),
               activeIcon: Icon(Icons.people),
-              label: 'Characters',
+              label: 'Karakter',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.movie_outlined),
               activeIcon: Icon(Icons.movie),
-              label: 'Episodes',
+              label: 'Episode',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
-              label: 'Profile',
+              label: 'Profil',
             ),
           ],
         ),

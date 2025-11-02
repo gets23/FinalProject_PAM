@@ -351,7 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: ElevatedButton.icon(
               onPressed: _handleLogout,
               icon: const Icon(Icons.logout),
-              label: const Text('Logout'),
+              label: const Text('Keluar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
                 foregroundColor: Colors.white,

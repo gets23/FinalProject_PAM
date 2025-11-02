@@ -1,8 +1,16 @@
+// lib/pages/characters/chara_page.dart
 import '/models/chara_model.dart';
 import '/pages/characters/chara_detail_page.dart';
 import '/services/api.dart';
 import '/widgets/cards/chara_card.dart';
 import 'package:flutter/material.dart';
+
+import '/config/theme.dart';
+import '/services/auth.dart';
+import '/database/dao/fav_dao.dart';
+import '/models/fav_model.dart';
+import '/pages/characters/fav_page.dart'; 
+import '/pages/characters/titan_page.dart';
 
 class CharactersPage extends StatefulWidget {
   const CharactersPage({Key? key}) : super(key: key);
@@ -15,37 +23,95 @@ class _CharactersPageState extends State<CharactersPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
+  final FavoriteDao _favoriteDao = FavoriteDao();
+  final AuthService _authService = AuthService();
+
   late Future<List<Character>> _charactersFuture;
   List<Character> _allCharacters = [];
   List<Character> _filteredCharacters = [];
 
+  Set<int> _favoriteIds = {};
+
   @override
   void initState() {
     super.initState();
-    // Panggil API saat halaman dibuka
     _charactersFuture = _loadCharacters();
-    
-    // Listener untuk search bar
+    _loadFavoriteIds();
     _searchController.addListener(_filterCharacters);
   }
 
-  // Fungsi untuk load data dari API
   Future<List<Character>> _loadCharacters() async {
     try {
       final characters = await _apiService.getCharacters();
-      setState(() {
-        _allCharacters = characters;
-        _filteredCharacters = characters;
-      });
+      if (mounted) {
+        setState(() {
+          _allCharacters = characters;
+          _filteredCharacters = characters;
+        });
+      }
       return characters;
     } catch (e) {
-      // Handle error
       print('Error loading characters: $e');
       throw Exception('Failed to load characters');
     }
   }
 
-  // Fungsi untuk filter list berdasarkan input search
+  Future<void> _loadFavoriteIds() async {
+    final userId = _authService.currentUser?.id;
+    if (userId == null) return; 
+
+    final ids = await _favoriteDao.getAllFavoriteIds(userId);
+    if (mounted) {
+      setState(() {
+        _favoriteIds = ids;
+      });
+    }
+  }
+
+  Future<void> _handleFavoriteToggle(Character character) async {
+    final userId = _authService.currentUser?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Silakan login untuk menambah favorit.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    final isCurrentlyFavorite = _favoriteIds.contains(character.id);
+
+    if (isCurrentlyFavorite) {
+      // --- HAPUS DARI FAVORIT ---
+      await _favoriteDao.removeFavorite(userId, character.id);
+      if (mounted) {
+        setState(() {
+          _favoriteIds.remove(character.id);
+        });
+      }
+    } else {
+      // --- TAMBAH KE FAVORIT ---
+      final newFavorite = FavoriteModel(
+        userId: userId,
+        characterId: character.id,
+        characterName: character.name,
+        
+        // --- 👇 PERBAIKAN DI SINI 👇 ---
+        characterImage: character.pictureUrl, // <-- Ganti dari .img ke .pictureUrl
+        // --- 👆 BATAS PERBAIKAN 👆 ---
+        
+        addedAt: DateTime.now().toIso8601String(),
+      );
+      await _favoriteDao.addFavorite(newFavorite);
+      if (mounted) {
+        setState(() {
+          _favoriteIds.add(character.id);
+        });
+      }
+    }
+  }
+
   void _filterCharacters() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -66,11 +132,36 @@ class _CharactersPageState extends State<CharactersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.colorScheme.background, // Parchment
+      backgroundColor: AppTheme.backgroundColor, 
       appBar: AppBar(
-        title: const Text('Database Karakter'),
+        title: const Text('Karakter Attack on Titan'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.favorite),
+            tooltip: 'Lihat Favorit',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FavoritesPage()),
+              ).then((_) {
+                _loadFavoriteIds();
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.shield),
+            tooltip: 'Lihat Titan',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TitansPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -79,13 +170,13 @@ class _CharactersPageState extends State<CharactersPage> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _searchController,
-              style: TextStyle(color: theme.colorScheme.onBackground),
+              style: TextStyle(color: AppTheme.textColor),
               decoration: InputDecoration(
                 hintText: 'Cari berdasarkan nama atau spesies...',
-                hintStyle: TextStyle(color: theme.colorScheme.secondary),
-                prefixIcon: Icon(Icons.search, color: theme.colorScheme.secondary),
+                hintStyle: TextStyle(color: AppTheme.textColor.withOpacity(0.7)),
+                prefixIcon: Icon(Icons.search, color: AppTheme.textColor.withOpacity(0.7)),
                 filled: true,
-                fillColor: theme.colorScheme.surface, // Parchment Card
+                fillColor: AppTheme.secondaryColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
@@ -103,7 +194,7 @@ class _CharactersPageState extends State<CharactersPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
+                      color: AppTheme.primaryColor,
                     ),
                   );
                 }
@@ -113,43 +204,48 @@ class _CharactersPageState extends State<CharactersPage> {
                   return Center(
                     child: Text(
                       'Gagal memuat data. Periksa koneksi internet.',
-                      style: TextStyle(color: theme.colorScheme.error),
+                      style: TextStyle(color: AppTheme.errorColor),
                     ),
                   );
                 }
                 
-                // Data Kosong (setelah filter)
+                // Data Kosong
                 if (_filteredCharacters.isEmpty) {
                   return Center(
                     child: Text(
                       'Karakter tidak ditemukan.',
-                      style: TextStyle(color: theme.colorScheme.secondary),
+                      style: TextStyle(color: AppTheme.textColor),
                     ),
                   );
                 }
 
-                // Sukses: Tampilkan GridView
+                // Sukses
                 return GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // 2 kolom
+                    crossAxisCount: 2,
                     crossAxisSpacing: 12.0,
                     mainAxisSpacing: 12.0,
-                    childAspectRatio: 0.75, // Rasio gambar (lebar/tinggi)
+                    childAspectRatio: 0.75,
                   ),
                   itemCount: _filteredCharacters.length,
                   itemBuilder: (context, index) {
                     final character = _filteredCharacters[index];
+                    final isFavorite = _favoriteIds.contains(character.id);
+
                     return CharacterCard(
                       character: character,
+                      isFavorite: isFavorite,
+                      onFavoriteToggle: () => _handleFavoriteToggle(character),
                       onTap: () {
-                        // Navigasi ke Halaman Detail
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => CharacterDetailPage(character: character),
                           ),
-                        );
+                        ).then((_) {
+                          _loadFavoriteIds();
+                        });
                       },
                     );
                   },

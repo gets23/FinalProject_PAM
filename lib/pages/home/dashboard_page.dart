@@ -17,13 +17,13 @@ class _Article {
 final List<_Article> dummyArticles = [
   _Article(
     title: 'Final Season Part 3 Announcement',
-    subtitle: 'The epic conclusion is coming. Get all the details on the final...',
+    subtitle: 'Akhir yang epik akan segera tiba. Dapatkan semua detailnya di final...',
     // Ganti URL mati dengan placeholder
     imagePath: 'assets/s3.jpeg', 
   ),
   _Article(
     title: 'Community Fan Art Spotlight',
-    subtitle: 'This week, we\'re featuring incredible talented artists...',
+    subtitle: 'Minggu ini, kami menampilkan seniman berbakat yang luar biasa ...',
     // Ganti URL mati dengan placeholder
     imagePath: 'assets/fanart.jpeg',
   ),
@@ -137,7 +137,7 @@ class DashboardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'The Latest Episode is Here',
+                        'Lihat Episode Terbaru',
                         style: AppTheme.headingMedium.copyWith(color: Colors.white),
                         maxLines: 1, // Pastikan tidak wrap
                         overflow: TextOverflow.ellipsis,

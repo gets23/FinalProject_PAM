@@ -1,95 +1,103 @@
-import '/models/chara_model.dart';
+// lib/widgets/cards/chara_card.dart
 import 'package:flutter/material.dart';
+import '/models/chara_model.dart';
+import '/config/theme.dart';
 
 class CharacterCard extends StatelessWidget {
   final Character character;
   final VoidCallback onTap;
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
 
   const CharacterCard({
     Key? key,
     required this.character,
     required this.onTap,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    // Tentukan status color
-    final statusColor = character.status == "Alive" 
-        ? Colors.green[700] 
-        : (character.status == "Deceased" ? theme.colorScheme.error : Colors.grey[600]);
-
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        elevation: 3,
-        color: theme.colorScheme.surface, // Warna parchment card
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: theme.colorScheme.primary),
-        ),
+    return Card(
+      color: AppTheme.secondaryColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Gambar Karakter
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                child: character.pictureUrl != null
-                    ? Image.network(
-                        character.pictureUrl!,
-                        fit: BoxFit.cover,
-                        // Loading indicator untuk gambar
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: theme.colorScheme.onPrimary,
-                            ),
-                          );
-                        },
-                        // Error handling jika gambar gagal load
-                        errorBuilder: (context, error, stackTrace) =>
-                            Icon(Icons.person, size: 50, color: theme.colorScheme.secondary),
-                      )
-                    : Icon(Icons.person, size: 50, color: theme.colorScheme.secondary),
-              ),
+            // --- 👇 BAGIAN INI KITA UBAH SEDIKIT 👇 ---
+            Stack(
+              children: [
+                // Gambar Karakter
+                Image.network(
+                  character.pictureUrl ?? 'https://via.placeholder.com/150',
+                  height: 180, // Tinggi gambar tetap
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // PERBAIKAN 1: BUNGKUS ICON DENGAN CENTER
+                    return Container(
+                      height: 180,
+                      color: AppTheme.backgroundColor,
+                      child: Center( // <-- TAMBAHKAN INI
+                        child: Icon(
+                          Icons.person,
+                          size: 60,
+                          color: AppTheme.textColor.withOpacity(0.5),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                // Tombol Hati (Favorit)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? AppTheme.accentColor : Colors.white,
+                      ),
+                      iconSize: 20,
+                      onPressed: onFavoriteToggle,
+                      tooltip: isFavorite ? 'Hapus favorit' : 'Tambah favorit',
+                    ),
+                  ),
+                ),
+              ],
             ),
             
-            // Info Teks
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+            // --- 👇 BAGIAN INI KITA UBAH JUGA 👇 ---
+            // PERBAIKAN 2: BUNGKUS DENGAN EXPANDED & CENTER
+            // Ini membuat nama karakter mengisi sisa ruang di card
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Center( // <-- TAMBAHKAN INI
+                  child: Text(
                     character.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: AppTheme.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                      color: AppTheme.primaryColor,
                     ),
-                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  // Status (Alive/Deceased)
-                  Text(
-                    character.status ?? 'Unknown',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                ),
               ),
             ),
+            // --- 👆 BATAS PERBAIKAN 👆 ---
           ],
         ),
       ),
